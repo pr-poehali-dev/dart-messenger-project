@@ -4,98 +4,336 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 80%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 0 0% 70%;
+    --radius: 0.75rem;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 80%;
+    --sidebar-primary: 0 0% 90%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 80%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 0 0% 60%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
-
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
   body {
     @apply bg-background text-foreground;
+    font-family: "Golos Text", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
   }
+}
+
+/* ===== AURORA ANIMATION ===== */
+.aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.18;
+  pointer-events: none;
+}
+.aurora-1 {
+  width: 500px;
+  height: 500px;
+  top: -120px;
+  left: -100px;
+  background: radial-gradient(circle, #7c3aed, #3b82f6, transparent);
+  animation: auroraFloat1 12s ease-in-out infinite;
+}
+.aurora-2 {
+  width: 400px;
+  height: 400px;
+  bottom: -80px;
+  right: -80px;
+  background: radial-gradient(circle, #ec4899, #8b5cf6, transparent);
+  animation: auroraFloat2 15s ease-in-out infinite;
+}
+.aurora-3 {
+  width: 300px;
+  height: 300px;
+  top: 40%;
+  left: 30%;
+  background: radial-gradient(circle, #06b6d4, #3b82f6, transparent);
+  animation: auroraFloat3 18s ease-in-out infinite;
+  opacity: 0.12;
+}
+
+@keyframes auroraFloat1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(60px, 40px) scale(1.1);
+  }
+  66% {
+    transform: translate(-30px, 70px) scale(0.9);
+  }
+}
+@keyframes auroraFloat2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-50px, -60px) scale(1.15);
+  }
+  66% {
+    transform: translate(40px, -30px) scale(0.95);
+  }
+}
+@keyframes auroraFloat3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-80px, 50px) scale(1.2);
+  }
+}
+
+/* ===== GLASS ===== */
+.dart-glass {
+  background: rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.dart-glass-btn {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+.dart-glass-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.dart-glass-header {
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ===== DART BUTTON ===== */
+.dart-btn {
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.9) 0%,
+    rgba(59, 130, 246, 0.9) 100%
+  );
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  box-shadow:
+    0 0 20px rgba(139, 92, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.dart-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 1) 0%,
+    rgba(59, 130, 246, 1) 100%
+  );
+  box-shadow:
+    0 0 30px rgba(139, 92, 246, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+.dart-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== INPUT ===== */
+.dart-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  color: white;
+  padding: 10px 14px;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: "Golos Text", sans-serif;
+}
+.dart-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+.dart-input:focus {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* ===== LOGO ===== */
+.dart-logo-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 40px rgba(124, 58, 237, 0.5),
+    0 0 80px rgba(124, 58, 237, 0.2);
+  animation: logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 40px rgba(124, 58, 237, 0.5),
+      0 0 80px rgba(124, 58, 237, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 60px rgba(124, 58, 237, 0.7),
+      0 0 100px rgba(59, 130, 246, 0.3);
+  }
+}
+.dart-logo-letter {
+  font-family: "Oswald", sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+/* ===== TITLE ===== */
+.dart-title {
+  font-family: "Oswald", sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  color: white;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #fff 30%, rgba(139, 92, 246, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== MESSAGES ===== */
+.dart-bubble-mine {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.85) 0%,
+    rgba(59, 130, 246, 0.85) 100%
+  );
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 18px 18px 4px 18px;
+  padding: 10px 14px;
+  backdrop-filter: blur(10px);
+}
+.dart-bubble-other {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px 18px 18px 4px;
+  padding: 10px 14px;
+  backdrop-filter: blur(10px);
+}
+
+/* ===== BADGE ===== */
+.dart-badge {
+  background: linear-gradient(135deg, #7c3aed, #3b82f6);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  flex-shrink: 0;
+}
+
+/* ===== TOGGLE ===== */
+.dart-toggle {
+  background: linear-gradient(135deg, #7c3aed, #3b82f6);
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease both;
+}
+.animate-scale-in {
+  animation: scaleIn 0.15s ease both;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
