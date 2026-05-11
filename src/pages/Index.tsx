@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 
-type Screen = "auth" | "register" | "chats" | "chat" | "settings" | "privacy" | "newChat" | "addAccount" | "editProfile" | "notifications";
+type Screen = "auth" | "register" | "chats" | "chat" | "settings" | "privacy" | "newChat" | "addAccount" | "editProfile" | "notifications" | "support";
 
 interface Attachment {
   id: number;
@@ -1005,7 +1005,7 @@ export default function DartMessenger() {
               { icon: "Shield", label: "Конфиденциальность", sub: "Номер, статус, поиск", action: () => setScreen("privacy") },
               { icon: "Bell", label: "Уведомления", sub: "Звуки, вибрация, предпросмотр", action: () => setScreen("notifications") },
               { icon: "Lock", label: "Безопасность", sub: "Пароль, двухфакторная", action: () => {} },
-              { icon: "HelpCircle", label: "Помощь", sub: "Поддержка, FAQ", action: () => {} },
+              { icon: "HelpCircle", label: "Помощь", sub: "Поддержка, FAQ", action: () => setScreen("support") },
             ].map((item, i) => (
               <button key={item.label} onClick={item.action}
                 className={`flex items-center justify-between w-full px-5 py-4 hover:bg-white/5 transition-all text-left ${i > 0 ? "border-t border-white/5" : ""}`}>
@@ -1115,5 +1115,148 @@ export default function DartMessenger() {
     </div>
   );
 
+  /* =================== SUPPORT =================== */
+  if (screen === "support") return (
+    <SupportScreen account={account} globalTheme={globalTheme} onBack={() => setScreen("settings")} />
+  );
+
   return null;
+}
+
+const SUPPORT_URL = "https://functions.poehali.dev/08645c64-77a4-4877-8cc4-61e52af0fcd3";
+
+interface SupportMsg { id: number; text: string; mine: boolean; time: string; isSystem?: boolean; }
+
+function SupportScreen({ account, globalTheme, onBack }: { account: { name: string; email: string }; globalTheme: string; onBack: () => void }) {
+  const THEMES = [
+    { id: "default", bg: "from-[#080808] to-[#0f0f0f]" },
+    { id: "ocean", bg: "from-[#001f3f] to-[#003366]" },
+    { id: "violet", bg: "from-[#1a0033] to-[#2d0052]" },
+    { id: "forest", bg: "from-[#0a1a0a] to-[#0d2b0d]" },
+    { id: "sunset", bg: "from-[#1a0a00] to-[#2b1500]" },
+  ];
+  const t = THEMES.find(x => x.id === globalTheme) || THEMES[0];
+
+  const [msgs, setMsgs] = useState<SupportMsg[]>([
+    { id: 1, text: "Привет! Это чат поддержки Dart. Опишите вашу проблему — мы ответим как можно скорее.", mine: false, time: "сейчас", isSystem: true },
+  ]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs.length]);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || sending) return;
+    const now = new Date().toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" });
+    const userMsg: SupportMsg = { id: Date.now(), text, mine: true, time: now };
+    setMsgs(p => [...p, userMsg]);
+    setInput("");
+    setSending(true);
+
+    try {
+      const res = await fetch(SUPPORT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: account.name, email: account.email, message: text }),
+      });
+      const data = await res.json();
+      const replyTime = new Date().toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" });
+      if (data.ok) {
+        setSent(true);
+        setMsgs(p => [...p, { id: Date.now(), text: "Ваше сообщение доставлено! Мы ответим в ближайшее время.", mine: false, time: replyTime, isSystem: true }]);
+      } else {
+        setMsgs(p => [...p, { id: Date.now(), text: "Не удалось отправить сообщение. Попробуйте ещё раз.", mine: false, time: replyTime, isSystem: true }]);
+      }
+    } catch {
+      const replyTime = new Date().toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" });
+      setMsgs(p => [...p, { id: Date.now(), text: "Ошибка сети. Проверьте соединение и попробуйте снова.", mine: false, time: replyTime, isSystem: true }]);
+    }
+    setSending(false);
+  };
+
+  return (
+    <div className="relative min-h-screen flex flex-col overflow-hidden">
+      <div className={`fixed inset-0 bg-gradient-to-br ${t.bg} z-0`}>
+        <div className="aurora aurora-1 opacity-30" />
+        <div className="aurora aurora-2 opacity-20" />
+      </div>
+      <div className="relative z-10 flex flex-col h-screen max-w-md mx-auto w-full">
+        {/* Header */}
+        <div className="px-3 pt-5 pb-3 dart-glass-header flex items-center gap-3">
+          <button onClick={onBack} className="dart-glass-btn p-2 rounded-xl">
+            <Icon name="ChevronLeft" size={20} className="text-white" />
+          </button>
+          <div className="w-10 h-10 rounded-full dart-btn flex items-center justify-center flex-shrink-0">
+            <Icon name="HeadphonesIcon" fallback="HelpCircle" size={18} className="text-white" />
+          </div>
+          <div>
+            <p className="font-semibold text-white text-sm" style={{ fontFamily: "Golos Text" }}>Поддержка Dart</p>
+            <p className="text-green-400 text-xs">Онлайн</p>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
+          {msgs.map(msg => (
+            <div key={msg.id} className={`flex ${msg.mine ? "justify-end" : "justify-start"}`}
+              style={{ animation: "fadeSlideUp 0.2s ease both" }}>
+              {!msg.mine && (
+                <div className="w-7 h-7 rounded-full dart-btn flex items-center justify-center flex-shrink-0 mr-2 mt-1">
+                  <Icon name="HelpCircle" size={13} className="text-white" />
+                </div>
+              )}
+              <div className={`max-w-[78%] ${msg.mine ? "dart-bubble-mine" : "dart-bubble-other"}`}>
+                <p className="text-white text-sm leading-relaxed">{msg.text}</p>
+                <div className={`flex items-center gap-1 mt-1 ${msg.mine ? "justify-end" : ""}`}>
+                  <p className="text-[10px] text-white/40">{msg.time}</p>
+                  {msg.mine && <Icon name="CheckCheck" size={11} className={sending ? "text-white/30" : "text-white/40"} />}
+                </div>
+              </div>
+            </div>
+          ))}
+          {sending && (
+            <div className="flex justify-start items-center gap-2 pl-9">
+              <div className="dart-bubble-other px-4 py-3">
+                <div className="flex gap-1">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/50"
+                      style={{ animation: `bounce 1.2s ${i * 0.2}s ease-in-out infinite` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+
+        {/* Input */}
+        <div className="px-3 py-3 pb-6 dart-glass-header">
+          {sent && (
+            <p className="text-center text-white/40 text-xs mb-2">Сообщение отправлено на почту поддержки</p>
+          )}
+          <div className="flex items-end gap-2">
+            <div className="flex-1 relative">
+              <textarea
+                className="dart-input w-full resize-none py-2.5 px-4 text-sm leading-relaxed"
+                placeholder="Опишите проблему..."
+                rows={1}
+                value={input}
+                disabled={sending}
+                onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                style={{ minHeight: 44, maxHeight: 120, opacity: sending ? 0.5 : 1 }}
+              />
+            </div>
+            <button onClick={send} disabled={sending || !input.trim()}
+              className={`p-2.5 rounded-xl flex-shrink-0 mb-0.5 transition-all ${input.trim() && !sending ? "dart-btn" : "dart-glass-btn opacity-50"}`}>
+              <Icon name={sending ? "Loader" : "Send"} size={19} className={`text-white ${sending ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
