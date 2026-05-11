@@ -1,7 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 
-type Screen = "auth" | "register" | "chats" | "chat" | "settings" | "privacy" | "newChat" | "addAccount" | "editProfile" | "notifications" | "support";
+type Screen = "auth" | "register" | "chats" | "chat" | "settings" | "privacy" | "newChat" | "addAccount" | "editProfile" | "notifications" | "support" | "ai";
+
+const QUICK_REPLIES = ["👍 Окей!", "✅ Принято!", "🔥 Огонь!", "😊 Хорошо", "⏰ Скоро отвечу", "❤️ Спасибо!"];
+const REACTIONS = ["❤️", "😂", "🔥", "👍", "😮", "😢", "🎉", "💯"];
+
+const STORIES = [
+  { id: 0, name: "Моя история", avatar: "Ю", gradient: "linear-gradient(135deg,#7c3aed,#3b82f6)", isMine: true, seen: false },
+  { id: 1, name: "Алекс", avatar: "АН", gradient: "linear-gradient(135deg,#f093fb,#f5576c)", isMine: false, seen: false },
+  { id: 2, name: "Dart", avatar: "D", gradient: "linear-gradient(135deg,#4facfe,#00f2fe)", isMine: false, seen: true },
+  { id: 3, name: "Команда", avatar: "КП", gradient: "linear-gradient(135deg,#43e97b,#38f9d7)", isMine: false, seen: false },
+  { id: 4, name: "Мария", avatar: "МС", gradient: "linear-gradient(135deg,#fa709a,#fee140)", isMine: false, seen: true },
+];
 
 interface Attachment {
   id: number;
@@ -266,6 +277,14 @@ export default function DartMessenger() {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [searchGlobal, setSearchGlobal] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [invisible, setInvisible] = useState(false);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [reactions, setReactions] = useState<Record<string, Record<string, string>>>({});
+  const [reactionTarget, setReactionTarget] = useState<number | null>(null);
+  const [seenStories, setSeenStories] = useState<Set<number>>(new Set());
+  const [activeStory, setActiveStory] = useState<typeof STORIES[0] | null>(null);
+  const [storyProgress, setStoryProgress] = useState(0);
+  const storyTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -297,6 +316,25 @@ export default function DartMessenger() {
     setCall(prev => prev ? { ...prev, status: "ended" } : null);
     setTimeout(() => setCall(null), 1200);
   }, []);
+
+  const openStory = (story: typeof STORIES[0]) => {
+    setActiveStory(story);
+    setStoryProgress(0);
+    setSeenStories(p => new Set([...p, story.id]));
+    if (storyTimerRef.current) clearInterval(storyTimerRef.current);
+    storyTimerRef.current = setInterval(() => {
+      setStoryProgress(p => {
+        if (p >= 100) { clearInterval(storyTimerRef.current!); setActiveStory(null); return 0; }
+        return p + 2;
+      });
+    }, 100);
+  };
+
+  const addReaction = (msgId: number, emoji: string) => {
+    const key = activeChat ? String(activeChat.id) : "0";
+    setReactions(prev => ({ ...prev, [key]: { ...(prev[key] || {}), [msgId]: emoji } }));
+    setReactionTarget(null);
+  };
 
   const sendMessage = (attachment?: Attachment) => {
     if (!inputText.trim() && !attachment) return;
@@ -494,7 +532,14 @@ export default function DartMessenger() {
       <div className="relative z-10 flex flex-col h-screen max-w-md mx-auto w-full">
         <div className="px-4 pt-6 pb-3">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="dart-title text-2xl">DART</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="dart-title text-2xl">DART</h1>
+              <button onClick={() => setInvisible(p => !p)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${invisible ? "bg-white/10 text-white/40" : "bg-green-500/20 text-green-400"}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${invisible ? "bg-white/30" : "bg-green-400"}`} />
+                {invisible ? "Невидимка" : "Онлайн"}
+              </button>
+            </div>
             <div className="flex gap-2">
               <button onClick={() => setShowSearch(p => !p)} className="dart-glass-btn p-2.5 rounded-xl">
                 <Icon name="Search" size={18} className="text-white/70" />
@@ -562,6 +607,69 @@ export default function DartMessenger() {
           )}
         </div>
 
+        {/* ===== STORIES ===== */}
+        {!search && (
+          <div className="px-3 pb-2">
+            <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+              {STORIES.map((story, i) => {
+                const seen = seenStories.has(story.id) || story.seen;
+                return (
+                  <button key={story.id} onClick={() => story.isMine ? null : openStory(story)}
+                    className="flex flex-col items-center gap-1.5 flex-shrink-0"
+                    style={{ animation: `fadeSlideUp 0.3s ${i * 50}ms ease both` }}>
+                    <div className="relative">
+                      <div className={`w-14 h-14 rounded-full p-0.5 ${seen ? "bg-white/15" : ""}`}
+                        style={!seen ? { background: "linear-gradient(135deg,#7c3aed,#ec4899,#f59e0b)" } : {}}>
+                        <div className="w-full h-full rounded-full flex items-center justify-center font-bold text-white text-sm border-2 border-black"
+                          style={{ background: story.gradient }}>
+                          {story.isMine ? (
+                            <div className="flex flex-col items-center">
+                              <Icon name="Plus" size={18} className="text-white" />
+                            </div>
+                          ) : story.avatar}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-white/50 max-w-14 truncate">{story.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ===== STORY VIEWER ===== */}
+        {activeStory && (
+          <div className="fixed inset-0 z-[90] flex flex-col" style={{ background: activeStory.gradient }}
+            onClick={() => { setActiveStory(null); if (storyTimerRef.current) clearInterval(storyTimerRef.current); }}>
+            <div className="pt-12 px-4">
+              <div className="h-1 bg-white/20 rounded-full overflow-hidden mb-4">
+                <div className="h-full bg-white rounded-full transition-all" style={{ width: `${storyProgress}%` }} />
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm"
+                  style={{ background: activeStory.gradient, border: "2px solid rgba(255,255,255,0.4)" }}>
+                  {activeStory.avatar}
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">{activeStory.name}</p>
+                  <p className="text-white/60 text-xs">только что</p>
+                </div>
+                <button className="ml-auto" onClick={() => { setActiveStory(null); if (storyTimerRef.current) clearInterval(storyTimerRef.current); }}>
+                  <Icon name="X" size={22} className="text-white" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 flex items-center justify-center px-6">
+              <div className="text-center">
+                <div className="text-7xl mb-4">✨</div>
+                <p className="text-white text-xl font-bold" style={{ fontFamily: "Oswald" }}>История {activeStory.name}</p>
+                <p className="text-white/60 text-sm mt-2">Нажми чтобы закрыть</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto px-3 pb-2 space-y-0.5">
           {filteredChats.length === 0 && (
             <div className="text-center text-white/30 py-16 text-sm">Ничего не найдено</div>
@@ -611,6 +719,12 @@ export default function DartMessenger() {
             <button className="flex-1 flex flex-col items-center py-3 gap-1 border-b-2 border-white/30">
               <Icon name="MessageCircle" size={20} className="text-white" />
               <span className="text-[10px] text-white font-medium">Чаты</span>
+            </button>
+            <button onClick={() => setScreen("ai")} className="flex-1 flex flex-col items-center py-3 gap-1">
+              <div className="relative">
+                <Icon name="Sparkles" size={20} className="text-white/40" />
+              </div>
+              <span className="text-[10px] text-white/40">AI</span>
             </button>
             <button onClick={() => setScreen("settings")} className="flex-1 flex flex-col items-center py-3 gap-1">
               <Icon name="Settings" size={20} className="text-white/40" />
@@ -766,8 +880,26 @@ export default function DartMessenger() {
                 <p className="text-white/40 text-sm text-center">Начните диалог с {activeChat.name}</p>
               </div>
             )}
+            {/* Reaction picker overlay */}
+            {reactionTarget !== null && (
+              <div className="fixed inset-0 z-40" onClick={() => setReactionTarget(null)}>
+                <div className="absolute dart-glass rounded-2xl p-2 flex gap-1 z-50"
+                  style={{ bottom: 120, left: "50%", transform: "translateX(-50%)", animation: "scaleIn 0.15s ease both" }}
+                  onClick={e => e.stopPropagation()}>
+                  {REACTIONS.map(r => (
+                    <button key={r} onClick={() => addReaction(reactionTarget, r)}
+                      className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 transition-all text-xl hover:scale-125">
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {activeChat.messages.map((msg) => {
               const replyMsg = msg.replyTo ? activeChat.messages.find(m => m.id === msg.replyTo) : null;
+              const chatKey = String(activeChat.id);
+              const msgReaction = reactions[chatKey]?.[msg.id];
               return (
                 <div key={msg.id} className={`flex ${msg.mine ? "justify-end" : "justify-start"} group`}
                   style={{ animation: "fadeSlideUp 0.2s ease both" }}>
@@ -777,19 +909,34 @@ export default function DartMessenger() {
                         <p className="text-white/60 truncate">{replyMsg.text}</p>
                       </div>
                     )}
-                    <div className={`relative ${msg.mine ? "dart-bubble-mine" : "dart-bubble-other"} ${replyMsg ? "rounded-tl-none" : ""}`}>
+                    <div className={`relative ${msg.mine ? "dart-bubble-mine" : "dart-bubble-other"} ${replyMsg ? "rounded-tl-none" : ""}`}
+                      onDoubleClick={() => setReactionTarget(msg.id)}>
                       {msg.attachment && <AttachmentPreview att={msg.attachment} mine={msg.mine} />}
                       {msg.text && <p className="text-white text-sm leading-relaxed break-words">{msg.text}</p>}
                       <div className={`flex items-center gap-1 mt-1 ${msg.mine ? "justify-end" : ""}`}>
                         <p className="text-[10px] text-white/40">{msg.time}</p>
                         {msg.mine && <Icon name="CheckCheck" size={11} className="text-white/40" />}
                       </div>
-                      {/* Reply button on hover */}
-                      <button onClick={() => setReplyTo(msg)}
-                        className={`absolute top-1/2 -translate-y-1/2 dart-glass-btn p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity ${msg.mine ? "-left-8" : "-right-8"}`}>
-                        <Icon name="Reply" size={12} className="text-white/60" />
-                      </button>
+                      {/* Action buttons on hover */}
+                      <div className={`absolute top-1/2 -translate-y-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${msg.mine ? "-left-16" : "-right-16"}`}>
+                        <button onClick={() => setReplyTo(msg)} className="dart-glass-btn p-1 rounded-lg">
+                          <Icon name="Reply" size={11} className="text-white/60" />
+                        </button>
+                        <button onClick={() => setReactionTarget(msg.id)} className="dart-glass-btn p-1 rounded-lg">
+                          <span className="text-xs">😊</span>
+                        </button>
+                      </div>
                     </div>
+                    {/* Reaction display */}
+                    {msgReaction && (
+                      <div className={`flex ${msg.mine ? "justify-end" : "justify-start"} mt-0.5`}>
+                        <button onClick={() => addReaction(msg.id, msgReaction)}
+                          className="dart-glass px-2 py-0.5 rounded-full text-xs flex items-center gap-1 border border-white/10">
+                          <span>{msgReaction}</span>
+                          <span className="text-white/50">1</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -808,6 +955,20 @@ export default function DartMessenger() {
               <button onClick={() => setReplyTo(null)}>
                 <Icon name="X" size={16} className="text-white/40" />
               </button>
+            </div>
+          )}
+
+          {/* Quick Replies */}
+          {showQuickReplies && (
+            <div className="px-3 py-2 dart-glass-header border-t border-white/5">
+              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                {QUICK_REPLIES.map(r => (
+                  <button key={r} onClick={() => { setInputText(r); setShowQuickReplies(false); }}
+                    className="dart-glass-btn px-3 py-1.5 rounded-xl text-white text-xs whitespace-nowrap hover:bg-white/15 transition-all flex-shrink-0">
+                    {r}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -852,6 +1013,10 @@ export default function DartMessenger() {
                   style={{ minHeight: 44, maxHeight: 120 }}
                 />
               </div>
+              <button onClick={() => setShowQuickReplies(p => !p)}
+                className={`dart-glass-btn p-2.5 rounded-xl flex-shrink-0 mb-0.5 transition-all ${showQuickReplies ? "bg-white/15" : ""}`}>
+                <Icon name="Zap" size={19} className="text-yellow-400" />
+              </button>
               <button onClick={() => sendMessage()}
                 className={`p-2.5 rounded-xl flex-shrink-0 mb-0.5 transition-all duration-200 ${inputText.trim() ? "dart-btn" : "dart-glass-btn"}`}>
                 <Icon name={inputText.trim() ? "Send" : "Mic"} size={19} className="text-white" />
@@ -1051,6 +1216,10 @@ export default function DartMessenger() {
               <Icon name="MessageCircle" size={20} className="text-white/40" />
               <span className="text-[10px] text-white/40">Чаты</span>
             </button>
+            <button onClick={() => setScreen("ai")} className="flex-1 flex flex-col items-center py-3 gap-1">
+              <Icon name="Sparkles" size={20} className="text-white/40" />
+              <span className="text-[10px] text-white/40">AI</span>
+            </button>
             <button className="flex-1 flex flex-col items-center py-3 gap-1 border-b-2 border-white/30">
               <Icon name="Settings" size={20} className="text-white" />
               <span className="text-[10px] text-white font-medium">Настройки</span>
@@ -1115,12 +1284,187 @@ export default function DartMessenger() {
     </div>
   );
 
+  /* =================== AI =================== */
+  if (screen === "ai") return (
+    <AIScreen globalTheme={globalTheme} onBack={() => setScreen("chats")} />
+  );
+
   /* =================== SUPPORT =================== */
   if (screen === "support") return (
     <SupportScreen account={account} globalTheme={globalTheme} onBack={() => setScreen("settings")} />
   );
 
   return null;
+}
+
+/* ===== AI SCREEN ===== */
+const AI_THEMES_MAP: Record<string, string> = {
+  default: "from-[#080808] to-[#0f0f0f]",
+  ocean: "from-[#001f3f] to-[#003366]",
+  violet: "from-[#1a0033] to-[#2d0052]",
+  forest: "from-[#0a1a0a] to-[#0d2b0d]",
+  sunset: "from-[#1a0a00] to-[#2b1500]",
+};
+
+const AI_SUGGESTIONS = [
+  "Как написать красивое приветствие?",
+  "Придумай смешную шутку",
+  "Помоги с ответом другу",
+  "Что сказать на первом свидании?",
+  "Напиши комплимент",
+];
+
+const AI_KNOWLEDGE: Record<string, string> = {
+  привет: "Привет! Я Dart AI — твой личный ассистент. Спрашивай что угодно! 🚀",
+  помощь: "Я помогу написать сообщение, придумать идею или просто поболтаю. Что нужно?",
+  шутка: "Почему программисты путают Хэллоуин и Рождество? Потому что OCT 31 = DEC 25 😄",
+  комплимент: "Ты настолько крут, что даже wi-fi тянется к тебе сам 😎",
+  "первое свидание": "«Знаешь, с тобой время летит так быстро... видимо потому что рядом с тобой даже секунды хотят длиться вечно» ❤️",
+  приветствие: "Вот несколько вариантов:\n• «Привет! Давно не виделись — как ты?»\n• «Хей! Думал о тебе, решил написать 😊»\n• «Привет! Есть минута?»",
+};
+
+function getAIReply(text: string): string {
+  const lower = text.toLowerCase();
+  for (const key of Object.keys(AI_KNOWLEDGE)) {
+    if (lower.includes(key)) return AI_KNOWLEDGE[key];
+  }
+  const generic = [
+    "Интересная мысль! Расскажи подробнее 🤔",
+    "Понял тебя. Вот что думаю: попробуй написать от сердца — это всегда работает ❤️",
+    "Хм, дай подумаю... Я бы сказал просто и честно — люди ценят искренность!",
+    "Отличный вопрос! Главное — будь собой, остальное приложится 💫",
+    "Тут есть несколько подходов. Самый простой: начни с улыбки и доброго слова 😊",
+  ];
+  return generic[Math.floor(Math.random() * generic.length)];
+}
+
+interface AIMsg { id: number; text: string; mine: boolean; time: string; }
+
+function AIScreen({ globalTheme, onBack }: { globalTheme: string; onBack: () => void }) {
+  const bg = AI_THEMES_MAP[globalTheme] || AI_THEMES_MAP.default;
+  const [msgs, setMsgs] = useState<AIMsg[]>([
+    { id: 1, text: "Привет! Я Dart AI 🤖\nМогу помочь написать сообщение, придумать идею или просто поболтаю.\nСпрашивай!", mine: false, time: "сейчас" },
+  ]);
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs.length, typing]);
+
+  const send = (text?: string) => {
+    const txt = (text || input).trim();
+    if (!txt || typing) return;
+    const now = new Date().toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" });
+    setMsgs(p => [...p, { id: Date.now(), text: txt, mine: true, time: now }]);
+    setInput("");
+    setTyping(true);
+    setTimeout(() => {
+      const reply = getAIReply(txt);
+      const replyTime = new Date().toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" });
+      setMsgs(p => [...p, { id: Date.now(), text: reply, mine: false, time: replyTime }]);
+      setTyping(false);
+    }, 800 + Math.random() * 600);
+  };
+
+  return (
+    <div className="relative min-h-screen flex flex-col overflow-hidden">
+      <div className={`fixed inset-0 bg-gradient-to-br ${bg} z-0`}>
+        <div className="aurora aurora-1 opacity-40" style={{ background: "radial-gradient(circle,#7c3aed,#a855f7,transparent)" }} />
+        <div className="aurora aurora-2 opacity-25" />
+      </div>
+      <div className="relative z-10 flex flex-col h-screen max-w-md mx-auto w-full">
+        {/* Header */}
+        <div className="px-3 pt-5 pb-3 dart-glass-header flex items-center gap-3">
+          <button onClick={onBack} className="dart-glass-btn p-2 rounded-xl">
+            <Icon name="ChevronLeft" size={20} className="text-white" />
+          </button>
+          <div className="w-10 h-10 rounded-full dart-btn flex items-center justify-center flex-shrink-0 relative">
+            <Icon name="Sparkles" size={18} className="text-white" />
+            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-black" />
+          </div>
+          <div>
+            <p className="font-semibold text-white text-sm" style={{ fontFamily: "Golos Text" }}>Dart AI</p>
+            <p className="text-white/40 text-xs">Персональный ассистент</p>
+          </div>
+          <div className="ml-auto flex items-center gap-1 px-2 py-1 bg-purple-500/15 rounded-lg border border-purple-500/20">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-400" style={{ animation: "logoPulse 2s ease-in-out infinite" }} />
+            <span className="text-purple-300 text-[10px] font-medium">AI активен</span>
+          </div>
+        </div>
+
+        {/* Suggestions */}
+        {msgs.length <= 1 && (
+          <div className="px-3 pt-3 pb-1">
+            <p className="text-white/30 text-xs mb-2 px-1">Попробуй спросить:</p>
+            <div className="flex flex-wrap gap-2">
+              {AI_SUGGESTIONS.map(s => (
+                <button key={s} onClick={() => send(s)}
+                  className="dart-glass-btn px-3 py-1.5 rounded-xl text-white/70 text-xs hover:bg-white/15 transition-all hover:text-white">
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2">
+          {msgs.map(msg => (
+            <div key={msg.id} className={`flex ${msg.mine ? "justify-end" : "justify-start"}`}
+              style={{ animation: "fadeSlideUp 0.2s ease both" }}>
+              {!msg.mine && (
+                <div className="w-7 h-7 rounded-full dart-btn flex items-center justify-center flex-shrink-0 mr-2 mt-1">
+                  <Icon name="Sparkles" size={12} className="text-white" />
+                </div>
+              )}
+              <div className={`max-w-[80%] ${msg.mine ? "dart-bubble-mine" : "dart-bubble-other"}`}>
+                <p className="text-white text-sm leading-relaxed whitespace-pre-line">{msg.text}</p>
+                <p className="text-[10px] text-white/35 mt-1 text-right">{msg.time}</p>
+              </div>
+            </div>
+          ))}
+          {typing && (
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full dart-btn flex items-center justify-center flex-shrink-0">
+                <Icon name="Sparkles" size={12} className="text-white" />
+              </div>
+              <div className="dart-bubble-other px-4 py-3">
+                <div className="flex gap-1">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/50"
+                      style={{ animation: `bounce 1.2s ${i * 0.2}s ease-in-out infinite` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+
+        {/* Input */}
+        <div className="px-3 py-3 pb-6 dart-glass-header">
+          <div className="flex items-end gap-2">
+            <div className="flex-1 relative">
+              <textarea
+                className="dart-input w-full resize-none py-2.5 px-4 text-sm leading-relaxed"
+                placeholder="Спроси что угодно..."
+                rows={1}
+                value={input}
+                disabled={typing}
+                onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                style={{ minHeight: 44, maxHeight: 120 }}
+              />
+            </div>
+            <button onClick={() => send()} disabled={typing || !input.trim()}
+              className={`p-2.5 rounded-xl flex-shrink-0 mb-0.5 transition-all ${input.trim() && !typing ? "dart-btn" : "dart-glass-btn opacity-50"}`}>
+              <Icon name={typing ? "Loader" : "Send"} size={19} className={`text-white ${typing ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const SUPPORT_URL = "https://functions.poehali.dev/08645c64-77a4-4877-8cc4-61e52af0fcd3";
